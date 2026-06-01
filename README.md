@@ -129,6 +129,15 @@ cargo nextest run --no-fail-fast
 mise run abi:generate-header
 ```
 
+## Licence
+
+Licensed under either of:
+
+- Apache License, Version 2.0 (`LICENSE-APACHE`)
+- MIT licence (`LICENSE-MIT`)
+
+at your option.
+
 ## Source of truth
 
 - ABI source: `src/capi.rs`
