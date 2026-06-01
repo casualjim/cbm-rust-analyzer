@@ -10,7 +10,7 @@ This crate is a Rust analyzer resolver library. It does not include consumer hea
 mise run abi:generate-header
 ```
 
-This runs `RUST_ANALYZER_GENERATE_HEADER=1 cargo build` and rewrites `include/rust_analyzer_lsp.h`. Normal `cargo build` does not rewrite the checked-in header.
+This runs `RUST_ANALYZER_GENERATE_HEADER=1 cargo build` and rewrites `include/rust_analyzer_lsp.h`. Normal `cargo build` does not rewrite the checked-in header. `mise run clean` removes the generated header; run `mise run abi:generate-header` or `mise run build:debug` to restore it.
 
 ## Check ABI header drift
 

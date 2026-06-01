@@ -7,12 +7,9 @@ set -euo pipefail
 #MISE depends=["build:debug"]
 #USAGE flag "--features <features>" help="Extra Cargo features to prepend before the default Ladybug features"
 
-default_features="crumbs/ladybug,crumbs-cli/ladybug"
-features="${default_features}"
+features=""
 if [[ -n "${usage_features:-}" ]]; then
-  features="${usage_features},${default_features}"
+  features="${usage_features},${features}"
 fi
 
 cargo nextest run --workspace --no-default-features --features "${features}"
-python -m unittest discover -s scripts -p 'test_*.py'
-

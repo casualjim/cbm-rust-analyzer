@@ -4,7 +4,7 @@ Fast path uses syntax-only `discover_workspace_calls(ResolverConfig::discovery_o
 
 | discovery_ms | textual_call_candidates | function_candidates | method_candidates | macro_candidates | proof_rows |
 |--------------|-------------------------|---------------------|-------------------|------------------|------------|
-| 1260 | 29625 | 6436 | 16853 | 6336 | 9 |
+| 880 | 29625 | 6436 | 16853 | 6336 | 9 |
 
 ## Proof rows
 

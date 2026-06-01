@@ -10,10 +10,9 @@ cd "$proj_dir" || exit 1
 
 set -euo pipefail
 
-default_features="crumbs/ladybug,crumbs-cli/ladybug"
-features="${default_features}"
+features=""
 if [[ -n "${usage_features:-}" ]]; then
-  features="${usage_features},${default_features}"
+  features="${usage_features},${features}"
 fi
 
 cargo nextest run --workspace --no-default-features --features "${features}"

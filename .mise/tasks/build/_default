@@ -10,10 +10,9 @@ echo "🚀 Starting release build..."
 proj_dir=$(git rev-parse --show-toplevel)
 cd "$proj_dir" || exit 1
 
-default_features="crumbs/ladybug,crumbs-cli/ladybug"
-features="${default_features}"
+features=""
 if [[ -n "${usage_features:-}" ]]; then
-  features="${usage_features},${default_features}"
+  features="${usage_features},${features}"
 fi
 
 cargo build --release --workspace --no-default-features --features "${features}"
