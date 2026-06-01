@@ -1,0 +1,12 @@
+[package]
+name = "cbm-ra-fixture-basic"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["cfg-fixture"]
+cfg-fixture = []
+
+[dependencies]
+fixture-cross-crate = { path = "fixture-cross-crate" }
+fixture-derive = { path = "fixture-derive" }

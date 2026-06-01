@@ -1,0 +1,16 @@
+redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
+
+[plugins]
+fnox-env = "https://github.com/jdx/mise-env-fnox"
+
+[settings]
+env_shell_expand = true
+lockfile = true
+
+[tools]
+fnox = "latest"
+
+[tools.rust]
+version = "latest"
+profile = "default"
+components = "llvm-tools,rust-analyzer"

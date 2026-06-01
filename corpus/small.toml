@@ -1,0 +1,56 @@
+# Small corpus manifest for resolver POC.
+# Active scope only: serde-rs/serde + tower-rs/tower.
+# Larger repos deferred by SPEC V14/T18.
+
+schema_version = 1
+scope = "small-poc"
+created = "2026-05-29"
+
+[validation]
+metrics_report = "corpus/small-validation.md"
+required_metrics = [
+  "load_time_ms",
+  "resolved_local_targets",
+  "external_targets",
+  "unresolved_count",
+  "ambiguous_count",
+  "sampled_false_positives",
+]
+
+[[repos]]
+name = "serde"
+slug = "serde-rs/serde"
+url = "https://github.com/serde-rs/serde.git"
+rev = "fa7da4a93567ed347ad0735c28e439fca688ef26"
+tier = "small"
+stress_tags = [
+  "derive/proc-macro",
+  "traits",
+  "generics",
+  "no_std",
+  "cfg/features",
+]
+proof_goals = [
+  "exercise proc-macro-derived code paths",
+  "detect false-positive targets around generated impls",
+  "measure unresolved/ambiguous macro-derived targets",
+]
+
+[[repos]]
+name = "tower"
+slug = "tower-rs/tower"
+url = "https://github.com/tower-rs/tower.git"
+rev = "251296dc54a044383dffd16d2179b443e2615672"
+tier = "small"
+stress_tags = [
+  "traits",
+  "generics",
+  "service/layer",
+  "async-adjacent",
+  "cfg/features",
+]
+proof_goals = [
+  "exercise trait/generic service dispatch",
+  "detect false-positive targets around blanket impls",
+  "measure unresolved/ambiguous trait-heavy calls",
+]

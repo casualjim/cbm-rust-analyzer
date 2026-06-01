@@ -1,0 +1,10 @@
+/target
+tests/fixtures/**/target/
+
+# Added by cargo
+#
+# already existing elements were commented out
+
+#/target
+.rpiv
+RUST_ANALYZER_RESOLVER_LIBRARY_PLAN.md

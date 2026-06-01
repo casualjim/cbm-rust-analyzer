@@ -1,0 +1,32 @@
+# Complex proof corpus for Rust LSP relationship POC.
+# Purpose: prove macro/proc-macro/generated/trait-generic/batch CBMResolvedCall-style output.
+
+schema_version = 1
+scope = "complex-proof"
+created = "2026-05-29"
+
+[validation]
+relationship_report = "corpus/proof-relationship-report.md"
+resolved_calls_jsonl = "corpus/proof-resolved-calls.jsonl"
+required_fields = ["caller_qn", "callee_qn", "strategy", "confidence", "reason", "raw_ra", "emit_edge"]
+
+[[repos]]
+name = "clap"
+slug = "clap-rs/clap"
+url = "https://github.com/clap-rs/clap.git"
+rev = "71a7213d6e45758bb8c9c5f7c36ed768edef872e"
+tier = "macro-heavy-proof"
+stress_tags = [
+  "macro_rules",
+  "proc-macro",
+  "derive",
+  "trait/generic",
+  "builder-api",
+  "batch-all-call-sites",
+]
+proof_goals = [
+  "macro_rules generated call edge has stable workspace target range",
+  "proc-macro-derived/generated method classified without false positive edge",
+  "all textual call sites inventoried with batch counts",
+  "broad semantic sample emits production-quality CBMResolvedCall-style rows",
+]

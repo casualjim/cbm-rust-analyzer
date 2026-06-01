@@ -1,0 +1,9 @@
+{"label":"macro_rules_arg","file":"tests/macros.rs","callee":"arg","kind":"macro","start_byte":65,"end_byte":74}
+{"label":"proc_macro_command","file":"tests/derive/app_name.rs","callee":"MyApp::command","kind":"function","start_byte":1385,"end_byte":1399}
+{"label":"trait_generic_mkeymap_get","file":"clap_builder/src/mkeymap.rs","callee":"get","kind":"method","start_byte":4121,"end_byte":4124}
+{"label":"builder_command_new","file":"tests/builder/utils.rs","callee":"Command::new","kind":"function","start_byte":1726,"end_byte":1738}
+{"label":"builder_command_arg","file":"tests/builder/utils.rs","callee":"arg","kind":"method","start_byte":2166,"end_byte":2169}
+{"label":"builder_arg_value_parser","file":"tests/builder/utils.rs","callee":"value_parser","kind":"method","start_byte":2792,"end_byte":2804}
+{"label":"generic_arg_matches_unwrap","file":"tests/builder/default_missing_vals.rs","callee":"unwrap","kind":"method","start_byte":447,"end_byte":453}
+{"label":"builder_try_get_matches_from","file":"tests/builder/default_missing_vals.rs","callee":"try_get_matches_from","kind":"method","start_byte":355,"end_byte":375}
+{"label":"external_iterator_collect","file":"tests/builder/utils.rs","callee":"collect","kind":"method","start_byte":622,"end_byte":629}
