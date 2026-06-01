@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+#MISE description="Install Rust analyzer C ABI artifacts into PREFIX"
+#MISE sources=["Cargo.toml", "Cargo.lock", "src/**/*.rs", "include/rust_analyzer_lsp.h", "cbindgen.toml"]
+#MISE outputs=["target/prefix/include/rust_analyzer_lsp.h", "target/prefix/lib/pkgconfig/rust_analyzer_lsp.pc"]
+
+echo "🚀 Installing Rust analyzer C ABI prefix..."
+proj_dir=$(git rev-parse --show-toplevel)
+cd "$proj_dir" || exit 1
+
+set -euo pipefail
+
+prefix="${PREFIX:-target/prefix}"
+case "$prefix" in
+  /*) ;;
+  *) prefix="$proj_dir/$prefix" ;;
+esac
+
+RUST_ANALYZER_GENERATE_HEADER=1 cargo build --release
+
+mkdir -p "$prefix/include" "$prefix/lib" "$prefix/lib/pkgconfig"
+cp include/rust_analyzer_lsp.h "$prefix/include/rust_analyzer_lsp.h"
+
+static_src="target/release/libcbm_rust_analyzer.a"
+if [[ -f "$static_src" ]]; then
+  cp "$static_src" "$prefix/lib/librust_analyzer_lsp.a"
+fi
+
+shared_ext="so"
+case "$(uname -s)" in
+  Darwin) shared_ext="dylib" ;;
+  MINGW*|MSYS*|CYGWIN*) shared_ext="dll" ;;
+esac
+shared_src="target/release/libcbm_rust_analyzer.${shared_ext}"
+if [[ -f "$shared_src" ]]; then
+  cp "$shared_src" "$prefix/lib/librust_analyzer_lsp.${shared_ext}"
+  if [[ "$(uname -s)" == "Darwin" ]] && command -v install_name_tool >/dev/null 2>&1; then
+    install_name_tool -id "@rpath/librust_analyzer_lsp.${shared_ext}" "$prefix/lib/librust_analyzer_lsp.${shared_ext}" || true
+  fi
+fi
+
+cat > "$prefix/lib/pkgconfig/rust_analyzer_lsp.pc" <<EOF
+prefix=$prefix
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+
+Name: rust_analyzer_lsp
+Description: Rust analyzer semantic call resolver C ABI
+Version: 0.1.0
+Libs: -L\${libdir} -Wl,-rpath,\${libdir} -lrust_analyzer_lsp
+Cflags: -I\${includedir}
+EOF
+
+printf 'Installed Rust analyzer C ABI prefix: %s\n' "$prefix"

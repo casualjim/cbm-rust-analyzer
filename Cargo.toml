@@ -16,10 +16,11 @@ ra_ap_syntax = "=0.0.334"
 ra_ap_vfs = "=0.0.334"
 
 [build-dependencies]
-bindgen = "0.72"
+cbindgen = "0.29"
 
 [dev-dependencies]
 async-lsp-client = "0.2.3"
+cbindgen = "0.29"
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
 tower-lsp = "0.20"

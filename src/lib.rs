@@ -1,5 +1,4 @@
 mod capi;
-mod cbm_sys;
 pub mod config;
 pub mod error;
 pub mod loader;

@@ -8,3 +8,4 @@ tests/fixtures/**/target/
 #/target
 .rpiv
 RUST_ANALYZER_RESOLVER_LIBRARY_PLAN.md
+*.local.toml

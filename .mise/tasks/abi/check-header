@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+#MISE description="Check generated Rust analyzer C ABI header drift"
+#MISE sources=["src/capi.rs", "cbindgen.toml", "include/rust_analyzer_lsp.h", "tests/abi_header.rs"]
+
+echo "🚀 Checking Rust analyzer C ABI header..."
+proj_dir=$(git rev-parse --show-toplevel)
+cd "$proj_dir" || exit 1
+
+set -euo pipefail
+
+cargo test --test abi_header generated_c_header_matches_checked_in_artifact

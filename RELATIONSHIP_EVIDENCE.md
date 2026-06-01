@@ -15,8 +15,8 @@ Fixture relationship proof for CBM `CBMResolvedCall` parity.
 
 ## Timings
 
-- cold start + first relationship pass: `2.231938334s`
-- warm relationship pass: `8.003375ms`
+- cold start + first relationship pass: `2.849192666s`
+- warm relationship pass: `9.790792ms`
 
 ## Resolved-call evidence
 

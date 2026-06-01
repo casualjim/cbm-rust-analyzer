@@ -1,13 +1,21 @@
 # SPEC
 
 ## §G GOAL
-rust-analyzer crate-backed resolver loads Cargo workspace & emits CBM-safe Rust call evidence.
+rust-analyzer crate-backed resolver loads Cargo workspace & emits stable Rust call evidence through generic C ABI.
 
 ## §C CONSTRAINTS
 - Rust 2024 Cargo crate `cbm-rust-analyzer`.
-- app code currently placeholder until T5 replaces `src/lib.rs::add`.
-- production intent from `RUST_ANALYZER_RESOLVER_LIBRARY_PLAN.md` ! vendorable Rust library + stable C ABI for CBM later.
-- first real milestone ! Rust API loader in `src/lib.rs`; C ABI later.
+- production intent from `RUST_ANALYZER_RESOLVER_LIBRARY_PLAN.md` ! vendorable Rust library + stable generic batch C ABI for consumers.
+- batch C ABI ! product surface; legacy single-file FFI product surface ⊥.
+- crate ! know rust-analyzer semantics only; CBM internals/build checkout dependency ⊥.
+- `CBM_MCP_ROOT` dependency ⊥; `codebase-memory-mcp` headers ∉ build inputs.
+- public C ABI names ! generic `RustAnalyzer*` structs + `rust_analyzer_*` funcs; `CBM*` ABI names ⊥.
+- consumer adapters own mapping from internal graph structs → Rust analyzer ABI.
+- C ABI source of truth ! Rust `#[repr(C)]` types + `extern "C"` exports in `src/capi.rs`; hand-rolled shifting header ⊥.
+- public C header ! generated from Rust source; manual ABI struct/prototype drift ⊥.
+- generated header may be checked in only as artifact; regeneration + diff check ! pass.
+- install proof ! `$PREFIX/include` header + `$PREFIX/lib` shared/static library + pkg-config file.
+- consumer proof ! tiny C program builds against `$PREFIX` only; repo checkout/private headers ⊥.
 - resolution ! use rust-analyzer semantics, not raw string/tree-sitter matching.
 - accuracy > recall: wrong edge ⊥; skip/mark unresolved when uncertain.
 - LSP spike ! oracle only; production runtime uses pinned `ra_ap_*` crates, not stdio LSP.
@@ -21,18 +29,18 @@ rust-analyzer crate-backed resolver loads Cargo workspace & emits CBM-safe Rust 
 - POC corpus ! start small: `serde-rs/serde` + `tower-rs/tower`; larger repos later.
 - clean corpus timing ! measure with repo `target/` absent before rust-analyzer start.
 - request timeout = `20s`.
-- parity target ! match CBM `go_lsp`/`ts_lsp`/`py_lsp` resolved-call contract, not editor-query smoke only.
+- parity target ! generic resolved-call contract mirrors graph needs: caller, callee, strategy, confidence, reason; editor-query smoke only ⊥.
 - relationship graph ! start from compiled/configured Cargo workspace then emit typed call evidence.
 - external deps/std/core targets ! diagnostics/counts only; CALLS edge output requires local/workspace target node.
 - POC proof gates passed enough for real-code loader start; LSP/corpus reports stay oracle evidence.
 - proof gate ! reliable macro_rules/proc-macro/generated/trait-generic batch relationships over real corpus.
 - do not edit app code during spec distill.
-- completion gate ! CBM integration contract inside this repo, not standalone resolver/perf path.
-- product path ! exported C ABI → RA semantics → `CBMResolvedCall`; syntax discovery/prefilter ! proof ⊥.
+- completion gate ! generic consumer ABI contract inside this repo; CBM adapter outside/later.
+- product path ! exported generic C ABI → RA semantics → `RustAnalyzerResolvedCall`; syntax discovery/prefilter ! proof ⊥.
 - fake short-name matching ⊥ in product path; no edge unless RA target maps to stable local/workspace def.
-- C ABI ! deterministic file identity: `rel_path` or batch file input; missing identity → no-edge, not guess.
+- C ABI ! deterministic file identity: `RustAnalyzerFile.rel_path` + `RustAnalyzerDefSite.rel_path`; missing identity → no-edge, not guess.
 - tests ! `#[ignore]` ⊥; relevant expensive tests run default or get replaced/deleted with stronger default proof.
-- CBM-only scope ! support calls/fields needed by `codebase-memory-mcp`; non-CBM public modes ? internal helper only.
+- consumer scope ! support generic call/def/result fields needed by graph indexers; consumer-specific structs stay adapter-side.
 
 ## §I INTERFACES
 - pkg: `Cargo.toml` → crate `cbm-rust-analyzer`, edition `2024`.
@@ -51,7 +59,13 @@ rust-analyzer crate-backed resolver loads Cargo workspace & emits CBM-safe Rust 
 - file: `LSP_RELATIONSHIP_MODEL.md` → parity model from `codebase-memory-mcp` LSP resolvers.
 - report: Rust resolved call evidence ? caller_qn, callee_qn, strategy, confidence, reason, call/target ranges.
 - report: complex proof ? macro_rules edges, proc-macro generated methods, real macro-heavy corpus, batch all-call extraction.
-- output: production `CBMResolvedCall` rows for local/workspace call evidence; external deps/std/core → diagnostics/counts only.
+- output: production `RustAnalyzerResolvedCall` rows for local/workspace call evidence; external deps/std/core → diagnostics/counts only.
+- ffi: `rust_analyzer_resolve_batch(workspace_root, RustAnalyzerDefSite[], RustAnalyzerFile[])` → `RustAnalyzerResolvedCallArray`.
+- artifact: generated `include/rust_analyzer_lsp.h` from `src/capi.rs` → consumer include/link contract; hand-authored ABI header ⊥.
+- prefix: `$PREFIX/include/rust_analyzer_lsp.h` + `$PREFIX/lib/librust_analyzer_lsp.{a,dylib,so}` + `$PREFIX/lib/pkgconfig/rust_analyzer_lsp.pc`.
+- pkg-config: `rust_analyzer_lsp` → `Cflags: -I${includedir}`, `Libs: -L${libdir} -lrust_analyzer_lsp`.
+- c-smoke: tiny C consumer builds with `$PREFIX` only and calls `rust_analyzer_resolve_batch` against fixture.
+- consumer: `codebase-memory-mcp` adapter maps CBM internals ↔ generic Rust analyzer ABI; crate does not include CBM headers.
 - lsp: `initialize` + `initialized` → fixture workspace load.
 - lsp: `textDocument/didOpen` → open fixture lib.
 - lsp: `textDocument/documentSymbol` → symbol discovery.
@@ -69,7 +83,7 @@ V5: ∀ fixture case → hover result ! contain expected symbol text, unless doc
 V6: ∀ non-limited fixture case → incoming call hierarchy ! map `exercise_all_cases` to original call-site range.
 V7: macro fixture limitation ! recorded as documented limitation, not hidden false positive.
 V8: `RustAnalyzerSession::shutdown` ! send shutdown, exit server, abort message task.
-V9: future C ABI ? returned Rust-owned memory ! valid until explicit result/handle destroy; C frees Rust strings directly ⊥.
+V9: batch C ABI returned Rust-owned memory ! valid until explicit result/handle destroy; C frees Rust strings directly ⊥.
 V10: future resolver ? no panic crosses FFI; failures return status + diagnostics.
 V11: corpus manifest ? pin repo URL + commit/rev + stress tags for each repo.
 V12: corpus run ? report clean-repo cold load time, first useful query latency, warm repeat latency, resolved local targets, external targets, unresolved/ambiguous count, sampled false positives.
@@ -78,7 +92,7 @@ V14: POC corpus scope ! active small repos only until macro/derive + trait/gener
 V15: macro/derive proof ! exercise proc-macro-derived code paths without false positive targets.
 V16: clean corpus smoke ! start from pinned checkout with `target/` absent.
 V17: POC proof ! rust-analyzer loads active repo + returns usable document symbols and ≥1 targeted semantic query result.
-V18: LSP parity ! Rust emits normalized resolved-call evidence compatible with CBM `caller_qn`, `callee_qn`, `strategy`, `confidence`, `reason` model.
+V18: LSP parity ! Rust emits normalized resolved-call evidence with `caller_qn`, `callee_qn`, `strategy`, `confidence`, `reason` model.
 V19: compile config ! record Cargo manifest, features, cfg, target triple?, proc-macro/build-script policy before relationship resolution.
 V20: relationship evidence ! ∀ call → source range + caller + raw RA evidence + target range or unresolved reason + confidence.
 V21: graph safety ! emit edge only when target maps to stable local/workspace source range & confidence ≥ `0.6`; ambiguous/unresolved → no edge.
@@ -88,7 +102,7 @@ V24: POC proof gate ! proc-macro-derived/generated method edges resolve or class
 V25: macro-heavy corpus ! ≥1 real crate beyond smoke-level `serde-rs/serde` exercises macro/proc-macro relationship extraction.
 V26: complex combo corpus ! large trait/generic/proc-macro patterns produce exact/generated/ambiguous/unresolved classifications.
 V27: batch proof ! real project textual call sites inventoried in one run; report total/macro counts + sampled semantic rows classify exact/generated/ambiguous/unresolved.
-V28: production output ! local/workspace calls emit `CBMResolvedCall` rows with `caller_qn`, `callee_qn`, `strategy`, `confidence`, `reason`; external deps/std/core → diagnostics/counts only.
+V28: production output ! local/workspace calls emit `RustAnalyzerResolvedCall` rows with `caller_qn`, `callee_qn`, `strategy`, `confidence`, `reason`; external deps/std/core → diagnostics/counts only.
 V29: generated include proof ! `build.rs` writes `OUT_DIR` Rust file + `include!(concat!(env!("OUT_DIR"), "..."))`; RA resolves included calls and records generated-file provenance/edge policy.
 V30: production resolver ! load Cargo workspace through pinned `ra_ap_*`; stdio LSP runtime ⊥.
 V31: first milestone ! `src/lib.rs` exposes Rust API loader before C ABI.
@@ -97,15 +111,27 @@ V33: resolver input ! workspace scan now & selected files/positions extension po
 V34: RA deps ! exact pin + version/license record before CBM integration.
 V35: LSP oracle tests ! validate behavior; production resolver load must not spawn `rust-analyzer` process.
 V36: dependency policy ! target ∉ local/workspace graph node → no CALLS edge row; record reason/count only.
-V37: feature complete ⇔ exported CBM ABI accepts CBM inputs + deterministic file identity and returns RA-backed `CBMResolvedCall` rows.
+V37: feature complete ⇔ batch ABI accepts generic def-sites + files + deterministic `rel_path` identity and returns RA-backed `RustAnalyzerResolvedCall` rows.
 V38: product resolver ! never resolve by callee short-name alone; RA definition/target evidence required.
 V39: ABI macro proof ! `macro_rules!` call through exported C ABI resolves stable local/workspace target or emits no-edge reason.
 V40: ABI proc-macro proof ! generated method/call provenance classified; false positive edge ⊥.
 V41: ABI trait/generic proof ! method target from RA semantics, not syntax method name.
 V42: default test suite ! `#[ignore]` absent across repo.
 V43: fast discovery ! prefilter/helper only; completion proof requires semantic ABI tests.
-V44: file identity ! single-file ABI includes `rel_path` or production uses batch ABI; source/module guessing ⊥.
+V44: file identity ! production uses batch ABI with per-file `rel_path` + def-site `rel_path`; source/module guessing ⊥.
 V45: safe failure ! RA load/query/map failure returns status/diagnostic or no-edge classification; panic/unsafe guessed edge ⊥.
+V46: legacy/CBM-prefixed Rust FFI symbols absent from exported surface; consumers call `rust_analyzer_resolve_batch` only.
+V47: C ABI header ! generated from Rust source; hand-written prototypes/structs for changing ABI ⊥.
+V48: ABI drift check ! regenerate header then diff; mismatch fails default verification.
+V49: generated header exposes exactly canonical generic batch resolver + free function; legacy/CBM-prefixed symbols absent.
+V50: crate build ! require `CBM_MCP_ROOT` or `codebase-memory-mcp` checkout; CBM headers ∉ build inputs.
+V51: public C ABI ! `RustAnalyzer*` structs + `rust_analyzer_*` funcs; `CBM*` public ABI names ⊥.
+V52: consumer adapter ! map internal structs to generic ABI outside this crate.
+V53: install prefix ! contain generated header under `$PREFIX/include` and static/shared library under `$PREFIX/lib` with generic `librust_analyzer_lsp` name.
+V54: pkg-config manifest ! `rust_analyzer_lsp.pc` emits usable include/lib flags for external C consumer.
+V55: C smoke consumer ! compile/link/run using only `$PREFIX` + fixture inputs; no repo-private/CBM headers.
+V56: prefix symbol audit ! exported symbols include `rust_analyzer_resolve_batch` + `rust_analyzer_free_resolved_call_array`; legacy/CBM-prefixed exports absent.
+V57: C smoke proof ! status `RUST_ANALYZER_OK` and ≥1 fixture edge returned via `RustAnalyzerResolvedCallArray`.
 
 ## §T TASKS
 id|status|task|cites
@@ -115,7 +141,7 @@ T3|x|verify document symbols/goto definition/hover/incoming calls in fixture|V3,
 T4|x|document macro case limitation path|V7
 T5|x|replace placeholder `src/lib.rs::add` with Rust API loader config/result surface|I.lib,V31
 T6|x|choose embedded pinned `ra_ap_*` crates; keep stdio LSP as oracle only|V30,V35
-T7|x|generate CBM bindings, expose Rust-owned temp ABI, add CBM wrapper that copies CBMResolvedCall rows into arena|V9,V10,V18,V31
+T7|x|initial CBM-shaped bindings proof; superseded by generic ABI tasks T46-T49|V9,V10,V18,V31
 T8|x|implement Cargo workspace loader with trusted-full proc-macro/build-script policy|V19,V30,V32
 T9|x|implement batch call collection/resolution: workspace scan first, selected inputs later|V28,V33,V21
 T10|x|extend fixtures: associated fn, deref, async, cfg feature, cross-crate, proc macro ?|V4,V5,V6,V7
@@ -131,22 +157,36 @@ T19|x|add clean-checkout small corpus RA smoke proof + timing report for `serde-
 T20|x|distill CBM LSP parity model from `codebase-memory-mcp` go/ts/py LSPs|V18,V19,V20,V21,V22
 T21|x|add Rust fixture relationship evidence report matching resolved-call contract|V18,V19,V20,V21,V22
 T22|x|classify macro/proc-macro/deref RA evidence into exact/generated/ambiguous/unresolved graph decisions|V20,V21,V22,V7
-T23|x|adapt Rust API plan toward `CBMResolvedCall`-style output before C ABI expansion|V9,V10,V18,V20,V21
+T23|x|adapt Rust API plan toward resolved-call-style output before C ABI expansion|V9,V10,V18,V20,V21
 T24|x|prove `macro_rules!` invocation/source-target edges in fixture + real crate; expansion-internal graph out of scope|V23,V20,V21,V22
 T25|x|prove proc-macro-derived/generated method edge handling without false positives|V24,V15,V20,V21,V22
 T26|x|add macro-heavy real corpus beyond `serde-rs/serde` for proof gate|V25,V11,V12,V13
 T27|x|prove curated broad semantic sample over trait/generic/proc-macro combos; exhaustive combo coverage out of scope|V26,V20,V21,V22
 T28|x|batch inventory all textual call sites + sampled semantic proof counts|V27,V12,V18,V20,V28
-T29|x|emit production-quality sampled semantic `CBMResolvedCall` JSONL rows; full textual inventory rows out of scope|V28,V18,V19,V20,V21
+T29|x|emit production-quality sampled semantic resolved-call JSONL rows; full textual inventory rows out of scope|V28,V18,V19,V20,V21
 T30|x|add `OUT_DIR` `include!` generated-code fixture + RA relationship proof|V29,V19,V20,V21,V22
 T31|x|choose external dependency policy: omit edge rows; diagnostics/counts only|V21,V28,V36
 T32|x|define isolated Cargo target-dir diagnostics for trusted-full loader|V19,V32
 T33|x|add/verify exported CBM-facing C ABI symbol and header contract for later `codebase-memory-mcp` link|V37,V44,V9,V10
 T34|x|replace C ABI short-name resolver with RA-backed call target resolver|V37,V38,V20,V21
 T35|x|thread deterministic file identity through ABI: add `rel_path` or require batch file input|V37,V44
-T36|x|add default ABI contract test: CBM-style defs/calls → exported ABI → `CBMResolvedCall`|V37,V42,V43
+T36|x|add default ABI contract test: def/call inputs → exported ABI → resolved-call rows|V37,V42,V43
 T37|x|resolve macro-expanded cross-file method call via RA stable target; proc-macro/generated ambiguous → no-edge|V39,V40,V41,V45
 T38|x|add guard/test or CI check that repo has no `#[ignore]` tests|V42
+T40|x|remove legacy Rust FFI product surface from spec + CBM integration plan; batch ABI only|V37,V44,V46,I.ffi
+T41|.|wire `codebase-memory-mcp` adapter to generic `rust_analyzer_resolve_batch` with def-sites + rel paths|V37,V44,V46,V50,V52,I.ffi
+T42|x|remove legacy Rust FFI code exports/header/tests; canonical batch ABI only|V37,V44,V46,I.ffi
+T43|x|replace hand-written Rust C ABI header with generated artifact from Rust source|V47,V48,I.ffi
+T44|x|add default ABI header drift check/regeneration command|V47,V48,V49
+T45|x|document generated-header handoff path for `codebase-memory-mcp` include/link|V37,V44,V47,I.ffi
+T46|x|remove `CBM_MCP_ROOT`/bindgen dependency on `codebase-memory-mcp` headers|V50,V52
+T47|x|rename public Rust C ABI structs/functions/header to generic `RustAnalyzer*`/`rust_analyzer_*`|V51,V49,I.ffi
+T48|x|update generated header drift test to forbid CBM-prefixed public ABI and CBM headers|V48,V49,V50,V51
+T49|x|update handoff docs: CBM consumes generic ABI through adapter, not crate dependency|V52,I.ffi
+T50|x|add `$PREFIX` install script for generated header + static/shared library|V53,V56,I.prefix,I.artifact
+T51|x|emit `rust_analyzer_lsp.pc` pkg-config manifest in `$PREFIX/lib/pkgconfig`|V54,I.pkg-config
+T52|x|add tiny C consumer smoke test using `$PREFIX` only|V55,V57,I.c-smoke,I.ffi
+T53|x|add prefix/header/symbol audit command for generic ABI proof|V53,V54,V56,V48
 
 ## §B BUGS
 id|date|cause|fix

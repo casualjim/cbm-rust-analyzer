@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+#MISE description="Check PREFIX install with pkg-config, C smoke test, and symbol audit"
+#MISE sources=["tests/c_abi_smoke/main.c", "include/rust_analyzer_lsp.h", "src/capi.rs"]
+#MISE depends=["prefix:install"]
+
+echo "🚀 Checking Rust analyzer C ABI prefix..."
+proj_dir=$(git rev-parse --show-toplevel)
+cd "$proj_dir" || exit 1
+
+set -euo pipefail
+
+prefix="${PREFIX:-target/prefix}"
+case "$prefix" in
+  /*) ;;
+  *) prefix="$proj_dir/$prefix" ;;
+esac
+
+if ! command -v pkg-config >/dev/null 2>&1; then
+  echo "pkg-config not found" >&2
+  exit 1
+fi
+
+export PKG_CONFIG_PATH="$prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+mkdir -p target/c_abi_smoke
+cc tests/c_abi_smoke/main.c $(pkg-config --cflags --libs rust_analyzer_lsp) -o target/c_abi_smoke/rust_analyzer_lsp_smoke
+
+fixture="$proj_dir/tests/fixtures/basic_crate"
+case "$(uname -s)" in
+  Darwin)
+    DYLD_LIBRARY_PATH="$prefix/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" target/c_abi_smoke/rust_analyzer_lsp_smoke "$fixture"
+    ;;
+  *)
+    LD_LIBRARY_PATH="$prefix/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" target/c_abi_smoke/rust_analyzer_lsp_smoke "$fixture"
+    ;;
+esac
+
+rg -n "CBM|cbm_" "$prefix/include/rust_analyzer_lsp.h" && {
+  echo "generated prefix header contains CBM-prefixed surface" >&2
+  exit 1
+} || true
+
+lib_for_symbols=""
+case "$(uname -s)" in
+  Darwin)
+    [[ -f "$prefix/lib/librust_analyzer_lsp.dylib" ]] && lib_for_symbols="$prefix/lib/librust_analyzer_lsp.dylib"
+    ;;
+  *)
+    [[ -f "$prefix/lib/librust_analyzer_lsp.so" ]] && lib_for_symbols="$prefix/lib/librust_analyzer_lsp.so"
+    ;;
+esac
+[[ -n "$lib_for_symbols" ]] || lib_for_symbols="$prefix/lib/librust_analyzer_lsp.a"
+
+symbols="$(nm -g "$lib_for_symbols" 2>/dev/null || true)"
+printf '%s\n' "$symbols" | rg "_?rust_analyzer_resolve_batch" >/dev/null
+printf '%s\n' "$symbols" | rg "_?rust_analyzer_free_resolved_call_array" >/dev/null
+if printf '%s\n' "$symbols" | rg "_?(cbm_rust_analyzer|cbm_run_rust|cbm_rust_)" >/dev/null; then
+  echo "prefix library exports legacy CBM-prefixed C ABI symbols" >&2
+  exit 1
+fi
+
+printf 'Prefix check passed: %s\n' "$prefix"
