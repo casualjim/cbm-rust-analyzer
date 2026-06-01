@@ -3,6 +3,18 @@ name = "cbm-rust-analyzer"
 version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
+description = "Rust analyzer semantic call resolver C ABI"
+repository = "https://github.com/casualjim/cbm-rust-analyzer"
+homepage = "https://github.com/casualjim/cbm-rust-analyzer"
+
+[package.metadata.dist]
+dist = true
+display-name = "Rust Analyzer LSP C ABI"
+formula = "rust-analyzer-lsp"
+installers = ["homebrew"]
+package-libraries = ["cdylib", "cstaticlib"]
+install-libraries = ["cdylib", "cstaticlib"]
+include = ["include", "lib"]
 
 [lib]
 crate-type = ["rlib", "staticlib", "cdylib"]
@@ -26,3 +38,8 @@ serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
 tower-lsp = "0.20"
 url = "2"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

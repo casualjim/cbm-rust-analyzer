@@ -8,6 +8,8 @@ env_shell_expand = true
 lockfile = true
 
 [tools]
+"cargo:cargo-dist" = "0.32.0"
+"cargo:cargo-xwin" = "0.22.0"
 fnox = "latest"
 
 [tools.rust]

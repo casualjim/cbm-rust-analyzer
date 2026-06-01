@@ -1,0 +1,33 @@
+[workspace]
+members = ["cargo:."]
+
+# Config for 'dist'
+[dist]
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.32.0"
+# CI backends to support
+ci = ["github"]
+# Release the C ABI library package.
+packages = ["cbm-rust-analyzer"]
+# The installers to generate for the C ABI library.
+installers = ["homebrew"]
+# Custom jobs to run after artifacts are built and before hosting/publishing.
+host-jobs = ["./patch-rust-analyzer-lsp-homebrew-formula"]
+# Publish jobs to run in CI.
+publish-jobs = ["homebrew"]
+# Target platforms to build libraries for (Rust target-triple syntax).
+targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu", "aarch64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+# A GitHub repo to push Homebrew formulas to.
+tap = "casualjim/homebrew-taps"
+# Path that installers should place binaries in.
+install-path = "CARGO_HOME"
+# Where to host releases.
+hosting = ["github"]
+# Keep releases focused on C ABI archives/formulae, no updater sidecars.
+install-updater = false
+# Whether to enable GitHub Attestations.
+github-attestations = true
+
+[dist.github-custom-runners]
+# Prefer native Linux ARM runner.
+aarch64-unknown-linux-gnu = "ubuntu-24.04-arm"

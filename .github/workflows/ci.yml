@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install mise
+        uses: jdx/mise-action@v3
+        with:
+          experimental: true
+          install: true
+          cache: false
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Generate ABI header
+        run: mise run abi:generate-header
+
+      - name: Check ABI header
+        run: mise run abi:check-header
+
+      - name: Build C ABI artifacts
+        run: cargo build --release --workspace
+
+      - name: Run tests
+        run: cargo test --workspace
+
+      - name: Install prefix-check dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config ripgrep
+
+      - name: Check prefix install
+        run: PREFIX=target/prefix mise run prefix:check

@@ -1,0 +1,35 @@
+name: Patch rust-analyzer-lsp Homebrew formula
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        required: true
+        type: string
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Download global artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: artifacts-build-global
+          path: target/distrib/
+      - name: Patch rust-analyzer-lsp formula
+        run: |
+          if [ -f target/distrib/rust-analyzer-lsp.rb ]; then
+            scripts/patch-rust-analyzer-lsp-homebrew-formula.py target/distrib/rust-analyzer-lsp.rb
+            echo "patched rust-analyzer-lsp Homebrew formula for include/lib/pkg-config layout"
+          else
+            echo "rust-analyzer-lsp Homebrew formula not present; nothing to patch"
+          fi
+      - name: Upload patched global artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: artifacts-build-global
+          path: target/distrib/
+          overwrite: true

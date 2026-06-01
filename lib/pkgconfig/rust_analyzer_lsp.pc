@@ -1,0 +1,10 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${prefix}
+includedir=${prefix}/include
+
+Name: rust_analyzer_lsp
+Description: Rust analyzer semantic call resolver C ABI
+Version: 0.1.0
+Libs: -L${libdir} -lcbm_rust_analyzer
+Cflags: -I${includedir}

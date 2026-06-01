@@ -112,6 +112,36 @@ The resolver is conservative by design:
 - Proc-macro/generated ambiguity must not create false edges.
 - Accuracy is preferred over recall.
 
+## Distribution
+
+Releases use cargo-dist with the C API library pattern from `palate-capi`. Config lives in `dist-workspace.toml`.
+
+Configured targets:
+
+- `x86_64-unknown-linux-gnu`
+- `aarch64-unknown-linux-gnu`
+- `aarch64-apple-darwin`
+- `x86_64-pc-windows-msvc`
+- `aarch64-pc-windows-msvc`
+
+Configured installers/artifacts:
+
+- Homebrew formula
+- release archives with `cdylib`, `cstaticlib`, `include/rust_analyzer_lsp.h`, and `lib/pkgconfig/rust_analyzer_lsp.pc`
+- patched Homebrew formula that installs the header into `include/` and pkg-config metadata into `lib/pkgconfig/`
+
+Check release plan locally:
+
+```sh
+dist plan
+```
+
+Build current host artifacts locally:
+
+```sh
+dist build --target=aarch64-apple-darwin --artifacts=all
+```
+
 ## Development tasks
 
 ```sh
